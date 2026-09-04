@@ -1,10 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { track } from '../lib/analytics.mjs';
 import Link from 'next/link';
 import { captureAttribution } from '../lib/utm.mjs';
 function attribution(){let old=null;try{old=JSON.parse(sessionStorage.getItem('aveniq.utm'));}catch{}const value=captureAttribution(window.location.search,old);try{sessionStorage.setItem('aveniq.utm',JSON.stringify(value));}catch{}return value;}
 
 export default function SignupForm({ enabled, days }) {
+  const started = useRef(false);
   useEffect(()=>{attribution();},[]);
   const [emailMarketing, setEmailMarketing] = useState(false);
   const [status, setStatus] = useState('idle');
@@ -19,11 +21,12 @@ export default function SignupForm({ enabled, days }) {
       const response = await fetch('/api/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ attribution: attribution(), phone: data.get('phone'), email: data.get('email'), privacy: data.get('privacy') === 'on', adult: data.get('adult') === 'on', sms: data.get('sms') === 'on', emailMarketing: data.get('emailMarketing') === 'on', website: data.get('website') }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || '신청을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      track('generate_lead');
       setStatus('success'); setMessage('신청이 접수되었습니다. 쿠폰은 아직 발급되지 않았으며, 출시 일정 확정 후 안내합니다.'); form.reset(); setEmailMarketing(false);
-    } catch (error) { setStatus('error'); setMessage(error.message || '연결이 원활하지 않습니다. 다시 시도해 주세요.'); }
+    } catch (error) { track('signup_submit_error'); setStatus('error'); setMessage(error.message || '연결이 원활하지 않습니다. 다시 시도해 주세요.'); }
   }
   if (status === 'success') return <div className="form-card success" role="status"><span className="success-icon">✓</span><h3>함께할 준비, 완료!</h3><p>{message}</p><button className="button secondary" onClick={() => {setStatus('idle'); setMessage('');}}>처음으로</button></div>;
-  return <form className="form-card" onSubmit={submit} aria-label="출시 알림 신청">
+  return <form className="form-card" onSubmit={submit} onChange={()=>{if(enabled && !started.current){started.current=true;track('signup_form_start');}}} aria-label="출시 알림 신청">
     <div className="form-heading"><h3>출시 알림 신청</h3><span className="pill muted">{enabled ? '신청 접수 중' : '오픈 준비 중'}</span></div>
     {!enabled && <p className="notice" role="status">현재는 미리보기입니다. 운영자 정보와 개인정보 안내를 확정한 뒤 신청을 열 예정이며, 지금은 개인정보를 입력하거나 전송할 수 없습니다.</p>}
     <fieldset disabled={!enabled || status === 'pending'}><legend className="sr-only">신청 정보와 동의</legend>
@@ -35,3 +38,4 @@ export default function SignupForm({ enabled, days }) {
     </fieldset><p className="form-status" role="status" aria-live="polite">{message}</p><p className="fine">결제 정보는 받지 않습니다. 실제 문자·이메일 발송은 아직 연결되지 않았습니다.</p>
   </form>;
 }
+
