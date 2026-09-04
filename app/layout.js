@@ -1,5 +1,6 @@
 import './globals.css';
 import './brand.css';
+import './campaign.css';
 import Link from 'next/link';
 import Image from 'next/image';
 
