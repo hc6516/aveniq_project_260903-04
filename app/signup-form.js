@@ -1,8 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { captureAttribution } from '../lib/utm.mjs';
+function attribution(){let old=null;try{old=JSON.parse(sessionStorage.getItem('aveniq.utm'));}catch{}const value=captureAttribution(window.location.search,old);try{sessionStorage.setItem('aveniq.utm',JSON.stringify(value));}catch{}return value;}
 
 export default function SignupForm({ enabled, days }) {
+  useEffect(()=>{attribution();},[]);
   const [emailMarketing, setEmailMarketing] = useState(false);
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
@@ -13,7 +16,7 @@ export default function SignupForm({ enabled, days }) {
     const data = new FormData(form);
     setStatus('pending'); setMessage('');
     try {
-      const response = await fetch('/api/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: data.get('phone'), email: data.get('email'), privacy: data.get('privacy') === 'on', adult: data.get('adult') === 'on', sms: data.get('sms') === 'on', emailMarketing: data.get('emailMarketing') === 'on', website: data.get('website') }) });
+      const response = await fetch('/api/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ attribution: attribution(), phone: data.get('phone'), email: data.get('email'), privacy: data.get('privacy') === 'on', adult: data.get('adult') === 'on', sms: data.get('sms') === 'on', emailMarketing: data.get('emailMarketing') === 'on', website: data.get('website') }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || '신청을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
       setStatus('success'); setMessage('신청이 접수되었습니다. 쿠폰은 아직 발급되지 않았으며, 출시 일정 확정 후 안내합니다.'); form.reset(); setEmailMarketing(false);

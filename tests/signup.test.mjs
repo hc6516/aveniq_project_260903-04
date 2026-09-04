@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { getConfig } from '../lib/config.mjs';
 import { validateSignup, handleSignup } from '../lib/signup.mjs';
 const valid = {phone:'010-0000-0000',email:'test@example.invalid',privacy:true,adult:true,sms:false,emailMarketing:false,website:''};
-const env = {NODE_ENV:'production',SIGNUPS_ENABLED:'true',PRIVACY_REVIEWED:'true',PRIVACY_OPERATOR:'Test Operator',PRIVACY_CONTACT_EMAIL:'test@example.invalid',PRIVACY_RETENTION_DAYS:'30',SUPABASE_URL:'https://example.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test',SITE_URL:'https://example.invalid'};
+const env = {NODE_ENV:'production',SIGNUPS_ENABLED:'true',PRIVACY_REVIEWED:'true',PRIVACY_OPERATOR:'Test Operator',PRIVACY_CONTACT_EMAIL:'test@example.invalid',PRIVACY_RETENTION_DAYS:'30',SUPABASE_URL:'https://example.supabase.co',SUPABASE_SECRET_KEY:'sb_secret_test',SITE_URL:'https://example.invalid'};
 test('email can be omitted, null or blank',()=>{for(const email of [undefined,null,'','   ']){const {data}=validateSignup({...valid,email});assert.equal(data.email,null);assert.equal('name' in data,false);}});
 test('email consent requires email',()=>{assert.ok(validateSignup({...valid,email:'',emailMarketing:true}).error);assert.deepEqual(validateSignup({...valid,emailMarketing:true}).data.marketing_consent_channels,['email']);});
 test('provided email does not imply consent',()=>assert.equal(validateSignup(valid).data.marketing_consent,false));
@@ -20,5 +20,5 @@ test('rejects invalid inputs',()=>{for(const change of [{phone:'123'},{email:'in
 test('closed endpoint never contacts DB',async()=>{let called=false;const r=await handleSignup(request(),{},()=>{called=true;});assert.equal(r.status,503);assert.equal(called,false);});
 test('cross-origin request blocked',async()=>assert.equal((await handleSignup(request(valid,'https://evil.invalid'),env)).status,403));
 test('oversized body rejected',async()=>assert.equal((await handleSignup(request({...valid,website:'a'.repeat(5000)}),env)).status,413));
-test('valid submission sends minimal insertion with no secret key',async()=>{let saved;const r=await handleSignup(request(),env,async(url,options)=>{saved=options;assert.match(String(url),/rest\/v1\/launch_signups/);return new Response(null,{status:201});});assert.equal(r.status,201);assert.equal(saved.headers.Prefer,'return=minimal');assert.equal(saved.headers.Authorization,undefined);assert.equal(JSON.parse(saved.body).source,'aveniq-web-v2');});
+test('valid submission sends minimal insertion with server key',async()=>{let saved;const r=await handleSignup(request(),env,async(url,options)=>{saved=options;assert.match(String(url),/rest\/v1\/aveniq_signups/);return new Response(null,{status:201});});assert.equal(r.status,201);assert.equal(saved.headers.Prefer,'return=minimal');assert.equal(saved.headers.Authorization,undefined);assert.equal(JSON.parse(saved.body).source,'aveniq-web-v2');});
 test('DB errors are not exposed',async()=>{const r=await handleSignup(request(),env,async()=>new Response('private database diagnostic',{status:400}));assert.equal(r.status,502);assert.ok(!(await r.text()).includes('private'));});

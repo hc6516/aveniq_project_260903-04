@@ -1,0 +1,3 @@
+'use client';
+import {useState} from 'react';
+export default function Login(){const [message,setMessage]=useState(''),[busy,setBusy]=useState(false);return <form className="tool-panel" onSubmit={async e=>{e.preventDefault();setBusy(true);setMessage('');try{const r=await fetch('/api/tools-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:new FormData(e.currentTarget).get('password')})});if(!r.ok)throw Error('비밀번호 또는 서버 설정을 확인해 주세요.');location.reload();}catch(e){setMessage(e.message);setBusy(false);}}}><label>관리자 비밀번호<input name="password" type="password" required minLength={20} maxLength={256} autoComplete="current-password"/></label><button disabled={busy}>{busy?'확인 중…':'로그인'}</button><p role="status">{message}</p></form>;}

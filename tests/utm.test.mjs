@@ -1,0 +1,13 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {normalize,captureAttribution,makeUrl,isBot,dateRange,suggestion} from '../lib/utm.mjs';
+import {authorized} from '../lib/tracking-server.mjs';
+test('utm values normalized',()=>assert.equal(normalize(' Hello World 한글!'),'hello-world-'));
+test('URL overrides entire stored attribution',()=>assert.deepEqual(captureAttribution('?utm_source=New',{utm_source:'old',utm_medium:'old'}),{landing_path:'/',utm_source:'new',utm_medium:'',utm_campaign:'',utm_content:'',utm_term:''}));
+test('stored attribution fallback',()=>assert.equal(captureAttribution('',{utm_source:'ig'}).utm_source,'ig'));
+test('bots and HEAD excluded',()=>{for(const ua of ['facebookexternalhit','kakaotalk-scrap','Twitterbot','Slackbot','Discordbot','Yeti','crawler'])assert.ok(isBot('GET',ua));assert.ok(isBot('HEAD','Mozilla'));assert.equal(isBot('GET','Mozilla Windows'),false);});
+test('safe destination',()=>assert.equal(new URL(makeUrl({source:'https://evil.com'})).hostname,'aveniq-launch-page.vercel.app'));
+test('Korean date bounds',()=>assert.deepEqual(dateRange('2026-09-28','2026-09-28'),{p_from:'2026-09-27T15:00:00.000Z',p_to:'2026-09-28T15:00:00.000Z'}));
+test('invalid dates rejected',()=>assert.throws(()=>dateRange('2026-02-31','')));
+test('serial suggestion',()=>assert.equal(suggestion({id:'x',content_mode:'serial',content_prefix:'reel'},[{channel_id:'x',content:'reel02'}]),'reel03'));
+test('admin fails closed',()=>assert.equal(authorized(new Request('https://a'),{}),false));
+test('admin checks secret',()=>{const pw='x'.repeat(30);assert.ok(authorized(new Request('https://a',{headers:{authorization:'Basic '+Buffer.from('admin:'+pw).toString('base64')}}),{UTM_ADMIN_PASSWORD:pw}));});
