@@ -1,6 +1,6 @@
 # AVENIQ launch page
 
-Rebuilt Next.js 16.3.4 / React 19.2.8 landing page. Not a CU-affiliated store. Product artwork is a concept. No checkout, coupon issuance or messaging provider is implemented.
+Rebuilt Next.js 16.3.4 / React 19.2.8 landing page. Everyday wellness positioning includes planned protein drinks and fruit tea. No retailer affiliation is claimed. Supplied logo and Canva tea concept imagery are used; planned price applies to a future confirmed offer, not the pictured multipack. No checkout, coupon issuance or messaging provider is implemented.
 
 ## Run
 
